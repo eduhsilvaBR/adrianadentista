@@ -1,5 +1,6 @@
 "use server";
 
+import { del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -103,6 +104,9 @@ export async function updatePatient(id: string, formData: FormData) {
 }
 
 export async function deletePatient(id: string) {
+  const attachments = await prisma.attachment.findMany({ where: { patientId: id } });
+  await Promise.all(attachments.map((a) => del(a.url).catch(() => {})));
+
   await prisma.patient.delete({ where: { id } });
   revalidatePath("/pacientes");
   redirect("/pacientes");

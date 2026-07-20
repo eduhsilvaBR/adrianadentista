@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id          String    @id @default(cuid())
+  name        String
+  phone       String?
+  reminderVia String    @default("WhatsApp")
+  email       String?
+  landline    String?
+  referral    String?
+  profession  String?
+  gender      String?
+  isForeign   Boolean   @default(false)
+  birthDate   DateTime?
+  cpf         String?
+  rg          String?
+  notes       String?
+
+  emergencyName  String?
+  emergencyPhone String?
+
+  cep          String?
+  street       String?
+  complement   String?
+  neighborhood String?
+  city         String?
+  state        String?
+
+  guardianName      String?
+  guardianCpf       String?
+  guardianBirthDate DateTime?
+
+  insurance          String  @default("Particular")
+  insuranceHolder    String?
+  insuranceCard      String?
+  insuranceHolderCpf String?
+
+  categories   Category[]
+  appointments Appointment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  patients Patient[]
+}
+
+model Professional {
+  id           String        @id @default(cuid())
+  name         String
+  email        String?
+  cro          String?
+  type         String        @default("Dentista")
+  appointments Appointment[]
+}
+
+model Appointment {
+  id             String        @id @default(cuid())
+  patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId      String
+  professional   Professional? @relation(fields: [professionalId], references: [id])
+  professionalId String?
+  chair          String?
+  date           DateTime
+  duration       Int           @default(30)
+  notes          String?
+  status         String        @default("Agendada")
+  createdAt      DateTime      @default(now())
+}

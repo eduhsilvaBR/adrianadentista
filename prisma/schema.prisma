@@ -42,9 +42,11 @@ model Patient {
   insuranceCard      String?
   insuranceHolderCpf String?
 
-  categories   Category[]
-  appointments Appointment[]
-  tasks        Task[]
+  categories    Category[]
+  appointments  Appointment[]
+  tasks         Task[]
+  attachments   Attachment[]
+  prescriptions Prescription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -62,9 +64,10 @@ model Professional {
   email        String?
   cro          String?
   type         String        @default("Dentista")
-  appointments Appointment[]
-  commitments  Commitment[]
-  tasks        Task[]
+  appointments  Appointment[]
+  commitments   Commitment[]
+  tasks         Task[]
+  prescriptions Prescription[]
 }
 
 model Chair {
@@ -113,5 +116,28 @@ model Task {
   patientId      String?
   professional   Professional? @relation(fields: [professionalId], references: [id])
   professionalId String?
+  createdAt      DateTime      @default(now())
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId String
+  name      String
+  url       String
+  size      Int
+  mimeType  String?
+  category  String   @default("Exame")
+  createdAt DateTime @default(now())
+}
+
+model Prescription {
+  id             String        @id @default(cuid())
+  patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId      String
+  professional   Professional? @relation(fields: [professionalId], references: [id])
+  professionalId String?
+  title          String        @default("Receita")
+  content        String
   createdAt      DateTime      @default(now())
 }

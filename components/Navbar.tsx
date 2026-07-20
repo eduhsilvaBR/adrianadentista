@@ -18,7 +18,7 @@ export default function Navbar() {
         <Link href="/pacientes" className="flex items-center gap-2">
           <span className="text-xl">🦷</span>
           <span className="text-lg font-bold text-brand-600">
-            Adriana C. da Silva
+            ADRIANA
           </span>
         </Link>
 

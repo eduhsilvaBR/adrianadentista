@@ -44,6 +44,9 @@ export default function AgendaCalendar({
   const [addingChair, setAddingChair] = useState(false);
   const [addingPro, setAddingPro] = useState(false);
   const [nowLabel, setNowLabel] = useState(() => new Date());
+  const [chairsOpen, setChairsOpen] = useState(true);
+  const [agendasOpen, setAgendasOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     const t = setInterval(() => setNowLabel(new Date()), 60000);
@@ -77,7 +80,7 @@ export default function AgendaCalendar({
     [commitments, filterProfessional]
   );
 
-  type Column = { key: string; label: string; sub: string; dateKey: string; chairId?: string; isToday: boolean };
+  type Column = { key: string; label: string; sub: string; dateKey: string; chairId?: string; isToday: boolean; isWeekend: boolean };
 
   const columns: Column[] = useMemo(() => {
     const todayKey = toDateKey(new Date());
@@ -90,27 +93,32 @@ export default function AgendaCalendar({
         dateKey: selectedKey,
         chairId: c.id,
         isToday: selectedKey === todayKey,
+        isWeekend: false,
       }));
     }
     if (view === "dia") {
       const d = new Date(`${selectedKey}T00:00:00.000Z`);
+      const wd = d.getUTCDay();
       return [{
         key: selectedKey,
-        label: WEEKDAYS_BR[d.getUTCDay()],
+        label: WEEKDAYS_BR[wd],
         sub: String(d.getUTCDate()),
         dateKey: selectedKey,
         isToday: selectedKey === todayKey,
+        isWeekend: wd === 0 || wd === 6,
       }];
     }
     return Array.from({ length: 7 }, (_, i) => {
       const d = addDays(new Date(`${mondayKey}T00:00:00.000Z`), i);
       const dateKey = toDateKey(d);
+      const wd = d.getUTCDay();
       return {
         key: dateKey,
-        label: WEEKDAYS_BR[d.getUTCDay()],
+        label: WEEKDAYS_BR[wd],
         sub: String(d.getUTCDate()),
         dateKey,
         isToday: dateKey === todayKey,
+        isWeekend: wd === 0 || wd === 6,
       };
     });
   }, [view, chairs, selectedKey, mondayKey]);
@@ -152,144 +160,186 @@ export default function AgendaCalendar({
   const editingAppt = editAppointmentId ? appointments.find((a) => a.id === editAppointmentId) : null;
 
   return (
-    <div className="mx-auto flex max-w-[1400px] gap-4 px-4 py-6">
+    <div className="mx-auto flex max-w-[1440px] gap-4 px-4 py-6">
       {/* Sidebar */}
-      <aside className="w-64 shrink-0 space-y-4">
-        <MiniCalendar selectedKey={selectedKey} onSelect={(k) => navigate(k, view === "semana" ? "semana" : view)} />
+      {sidebarOpen && (
+        <aside className="w-64 shrink-0 space-y-4">
+          <MiniCalendar selectedKey={selectedKey} onSelect={(k) => navigate(k, view === "semana" ? "semana" : view)} />
 
-        <div className="rounded-xl bg-white p-4 shadow-sm">
-          <p className="mb-2 text-sm font-semibold text-gray-800">Cadeiras</p>
-          <div className="space-y-1">
-            <button
-              onClick={() => setFilterChair("all")}
-              className={`block w-full rounded-lg px-2 py-1.5 text-left text-sm ${filterChair === "all" ? "bg-brand-50 text-brand-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
-            >
-              Todas
-            </button>
-            {chairs.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setFilterChair(c.id)}
-                className={`block w-full rounded-lg px-2 py-1.5 text-left text-sm ${filterChair === c.id ? "bg-brand-50 text-brand-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-          {addingChair ? (
-            <form
-              action={async (fd) => { await addChair(fd); setAddingChair(false); router.refresh(); }}
-              className="mt-2 flex gap-1"
-            >
-              <input name="name" autoFocus placeholder="Nome da cadeira" className="w-full rounded-lg border border-gray-300 px-2 py-1 text-xs" />
-              <button type="submit" className="rounded-lg bg-brand-600 px-2 text-xs text-white">OK</button>
-            </form>
-          ) : (
-            <button onClick={() => setAddingChair(true)} className="mt-2 text-xs font-medium text-brand-600 hover:underline">
-              + Adicionar cadeira
-            </button>
-          )}
-        </div>
-
-        <div className="rounded-xl bg-white p-4 shadow-sm">
-          <p className="mb-2 text-sm font-semibold text-gray-800">Agendas</p>
-          <div className="space-y-1">
-            <button
-              onClick={() => setFilterProfessional("all")}
-              className={`block w-full rounded-lg px-2 py-1.5 text-left text-sm ${filterProfessional === "all" ? "bg-brand-50 text-brand-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
-            >
-              Todos
-            </button>
-            {professionals.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setFilterProfessional(p.id)}
-                className={`block w-full rounded-lg px-2 py-1.5 text-left text-sm ${filterProfessional === p.id ? "bg-brand-50 text-brand-700 font-medium" : "text-gray-600 hover:bg-gray-50"}`}
-              >
-                {p.name}
-              </button>
-            ))}
-          </div>
-          {addingPro ? (
-            <form
-              action={async (fd) => { await addProfessional(fd); setAddingPro(false); router.refresh(); }}
-              className="mt-2 space-y-1"
-            >
-              <input name="name" autoFocus placeholder="Nome do profissional" className="w-full rounded-lg border border-gray-300 px-2 py-1 text-xs" />
-              <input name="email" placeholder="E-mail (opcional)" className="w-full rounded-lg border border-gray-300 px-2 py-1 text-xs" />
-              <button type="submit" className="rounded-lg bg-brand-600 px-2 py-1 text-xs text-white">Adicionar</button>
-            </form>
-          ) : (
-            <button onClick={() => setAddingPro(true)} className="mt-2 text-xs font-medium text-brand-600 hover:underline">
-              + Adicionar profissional
-            </button>
-          )}
-        </div>
-
-        {tasks.length > 0 && (
           <div className="rounded-xl bg-white p-4 shadow-sm">
-            <p className="mb-2 text-sm font-semibold text-gray-800">Tarefas</p>
-            <div className="space-y-1.5">
-              {tasks.map((t) => (
-                <div key={t.id} className="flex items-start gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    defaultChecked={t.done}
-                    onChange={async (e) => { await toggleTaskDone(t.id, e.target.checked); router.refresh(); }}
-                    className="mt-0.5 accent-brand-600"
-                  />
-                  <div className="flex-1">
-                    <p className={t.done ? "text-gray-400 line-through" : "text-gray-700"}>{t.title}</p>
-                    {t.patientName && <p className="text-xs text-gray-400">{t.patientName}</p>}
-                  </div>
+            <button
+              onClick={() => setChairsOpen((v) => !v)}
+              className="mb-2 flex w-full items-center justify-between text-sm font-semibold text-gray-800"
+            >
+              Cadeiras
+              <span className={`text-gray-400 transition-transform ${chairsOpen ? "" : "-rotate-90"}`}>▾</span>
+            </button>
+            {chairsOpen && (
+              <>
+                <div className="space-y-0.5">
                   <button
-                    onClick={async () => { await deleteTask(t.id); router.refresh(); }}
-                    className="text-xs text-gray-300 hover:text-red-500"
+                    onClick={() => setFilterChair("all")}
+                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${filterChair === "all" ? "bg-brand-50 font-medium text-brand-700" : "text-gray-600 hover:bg-gray-50"}`}
                   >
-                    ×
+                    <span className={`h-1.5 w-1.5 rounded-full ${filterChair === "all" ? "bg-brand-500" : "bg-gray-300"}`} />
+                    Todas
                   </button>
+                  {chairs.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setFilterChair(c.id)}
+                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${filterChair === c.id ? "bg-brand-50 font-medium text-brand-700" : "text-gray-600 hover:bg-gray-50"}`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${filterChair === c.id ? "bg-brand-500" : "bg-gray-300"}`} />
+                      {c.name}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
+                {addingChair ? (
+                  <form
+                    action={async (fd) => { await addChair(fd); setAddingChair(false); router.refresh(); }}
+                    className="mt-2 flex gap-1"
+                  >
+                    <input name="name" autoFocus placeholder="Nome da cadeira" className="w-full rounded-lg border border-gray-300 px-2 py-1 text-xs" />
+                    <button type="submit" className="rounded-lg bg-brand-600 px-2 text-xs text-white">OK</button>
+                  </form>
+                ) : (
+                  <button onClick={() => setAddingChair(true)} className="mt-2 text-xs font-medium text-brand-600 hover:underline">
+                    + Adicionar cadeira
+                  </button>
+                )}
+              </>
+            )}
           </div>
-        )}
 
-        <div className="rounded-xl bg-white p-4 text-center shadow-sm">
-          <p className="text-3xl">☁️</p>
-          <p className="mt-1 text-sm font-medium text-gray-700">Tem um backup?</p>
-          <p className="mt-1 text-xs text-gray-500">
-            Se você está vindo de outro sistema ou tem dados em planilhas, nós podemos te ajudar.
-          </p>
-          <button className="mt-3 w-full rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
-            Importar dados
-          </button>
-        </div>
-      </aside>
+          <div className="rounded-xl bg-white p-4 shadow-sm">
+            <button
+              onClick={() => setAgendasOpen((v) => !v)}
+              className="mb-2 flex w-full items-center justify-between text-sm font-semibold text-gray-800"
+            >
+              Agendas
+              <span className={`text-gray-400 transition-transform ${agendasOpen ? "" : "-rotate-90"}`}>▾</span>
+            </button>
+            {agendasOpen && (
+              <>
+                <div className="space-y-0.5">
+                  <button
+                    onClick={() => setFilterProfessional("all")}
+                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${filterProfessional === "all" ? "bg-brand-50 font-medium text-brand-700" : "text-gray-600 hover:bg-gray-50"}`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${filterProfessional === "all" ? "bg-brand-500" : "bg-gray-300"}`} />
+                    Todos
+                  </button>
+                  {professionals.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setFilterProfessional(p.id)}
+                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${filterProfessional === p.id ? "bg-brand-50 font-medium text-brand-700" : "text-gray-600 hover:bg-gray-50"}`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${filterProfessional === p.id ? "bg-brand-500" : "bg-gray-300"}`} />
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+                {addingPro ? (
+                  <form
+                    action={async (fd) => { await addProfessional(fd); setAddingPro(false); router.refresh(); }}
+                    className="mt-2 space-y-1"
+                  >
+                    <input name="name" autoFocus placeholder="Nome do profissional" className="w-full rounded-lg border border-gray-300 px-2 py-1 text-xs" />
+                    <input name="email" placeholder="E-mail (opcional)" className="w-full rounded-lg border border-gray-300 px-2 py-1 text-xs" />
+                    <button type="submit" className="rounded-lg bg-brand-600 px-2 py-1 text-xs text-white">Adicionar</button>
+                  </form>
+                ) : (
+                  <button onClick={() => setAddingPro(true)} className="mt-2 text-xs font-medium text-brand-600 hover:underline">
+                    + Adicionar profissional
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {tasks.length > 0 && (
+            <div className="rounded-xl bg-white p-4 shadow-sm">
+              <p className="mb-2 text-sm font-semibold text-gray-800">Tarefas</p>
+              <div className="space-y-1.5">
+                {tasks.map((t) => (
+                  <div key={t.id} className="flex items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      defaultChecked={t.done}
+                      onChange={async (e) => { await toggleTaskDone(t.id, e.target.checked); router.refresh(); }}
+                      className="mt-0.5 accent-brand-600"
+                    />
+                    <div className="flex-1">
+                      <p className={t.done ? "text-gray-400 line-through" : "text-gray-700"}>{t.title}</p>
+                      {t.patientName && <p className="text-xs text-gray-400">{t.patientName}</p>}
+                    </div>
+                    <button
+                      onClick={async () => { await deleteTask(t.id); router.refresh(); }}
+                      className="text-xs text-gray-300 hover:text-red-500"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-xl bg-white p-4 text-center shadow-sm">
+            <p className="text-3xl">☁️</p>
+            <p className="mt-1 text-sm font-medium text-gray-700">Tem um backup?</p>
+            <p className="mt-1 text-xs text-gray-500">
+              Se você está vindo de outro sistema ou tem dados em planilhas, nós podemos te ajudar.
+            </p>
+            <button className="mt-3 w-full rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
+              Importar dados
+            </button>
+          </div>
+        </aside>
+      )}
 
       {/* Main calendar */}
-      <div className="flex-1 rounded-xl bg-white shadow-sm">
-        <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
+      <div className="min-w-0 flex-1 rounded-xl bg-white shadow-sm">
+        <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
+          <button
+            onClick={() => setSidebarOpen((v) => !v)}
+            title={sidebarOpen ? "Ocultar painel lateral" : "Mostrar painel lateral"}
+            className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          >
+            {sidebarOpen ? "⟨" : "⟩"}
+          </button>
           <h1 className="text-lg font-semibold text-gray-800">
             {MONTHS_BR[headerDate.getUTCMonth()]} {headerDate.getUTCFullYear()}
           </h1>
           <div className="flex gap-1">
-            <button onClick={() => shift(view === "semana" ? -7 : -1)} className="rounded-lg border border-gray-200 px-2 py-1 text-gray-500 hover:bg-gray-50">‹</button>
-            <button onClick={() => shift(view === "semana" ? 7 : 1)} className="rounded-lg border border-gray-200 px-2 py-1 text-gray-500 hover:bg-gray-50">›</button>
+            <button onClick={() => shift(view === "semana" ? -7 : -1)} className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100">‹</button>
+            <button onClick={() => shift(view === "semana" ? 7 : 1)} className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100">›</button>
           </div>
           <button onClick={() => navigate(toDateKey(new Date()))} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50">
             Hoje
           </button>
 
-          <div className="ml-auto flex gap-1 rounded-lg border border-gray-200 p-0.5">
-            {(["semana", "dia", "cadeira"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => navigate(selectedKey, v)}
-                className={`rounded-md px-3 py-1 text-sm font-medium capitalize transition-colors ${view === v ? "bg-brand-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}
-              >
-                {v}
-              </button>
-            ))}
+          <div className="ml-auto flex items-center gap-2">
+            <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
+              {(["semana", "dia", "cadeira"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => navigate(selectedKey, v)}
+                  className={`rounded-md px-3 py-1 text-sm font-medium capitalize transition-colors ${view === v ? "bg-white text-brand-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => window.print()}
+              title="Imprimir agenda"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            >
+              🖨️
+            </button>
           </div>
         </div>
 
@@ -311,10 +361,12 @@ export default function AgendaCalendar({
           </button>
 
           {/* Hour gutter */}
-          <div className="w-14 shrink-0 pt-8">
+          <div className="w-14 shrink-0 pt-9">
             {hours.map((h) => (
-              <div key={h} style={{ height: ROW_HEIGHT }} className="pr-2 text-right text-xs text-gray-400">
-                {String(h).padStart(2, "0")}h
+              <div key={h} style={{ height: ROW_HEIGHT }} className="relative">
+                <span className="absolute -top-2 right-2 text-xs text-gray-400">
+                  {String(h).padStart(2, "0")}h
+                </span>
               </div>
             ))}
           </div>
@@ -324,14 +376,19 @@ export default function AgendaCalendar({
             {columns.map((col) => {
               const { appts, comms } = eventsForColumn(col);
               return (
-                <div key={col.key} className="flex-1 border-l border-gray-100">
-                  <div className={`sticky top-0 z-[1] border-b border-gray-100 bg-white py-1.5 text-center ${col.isToday ? "text-brand-600" : "text-gray-600"}`}>
-                    <p className="text-xs font-medium">{col.label}</p>
-                    {col.sub && (
-                      <p className={`mx-auto mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-sm ${col.isToday ? "bg-brand-600 text-white" : ""}`}>
-                        {col.sub}
-                      </p>
-                    )}
+                <div
+                  key={col.key}
+                  className={`flex-1 border-l border-gray-100 ${col.isWeekend ? "bg-gray-50/60" : col.isToday ? "bg-brand-50/50" : ""}`}
+                >
+                  <div className={`sticky top-0 z-[1] border-b border-gray-100 py-2 text-center ${col.isToday ? "bg-brand-50/70" : "bg-white"}`}>
+                    <p className={`text-sm font-medium ${col.isToday ? "text-brand-700" : "text-gray-600"}`}>
+                      {col.label}
+                      {col.sub && (
+                        <span className={col.isToday ? "ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-xs text-white" : "ml-1.5"}>
+                          {col.sub}
+                        </span>
+                      )}
+                    </p>
                   </div>
                   <div
                     className="relative cursor-pointer"
@@ -348,15 +405,15 @@ export default function AgendaCalendar({
                       const top = ((mins - START_HOUR * 60) / 60) * ROW_HEIGHT;
                       return (
                         <div className="pointer-events-none absolute left-0 right-0 z-[2] flex items-center" style={{ top }}>
-                          <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                          <span className="h-px flex-1 bg-red-400" />
+                          <span className="-ml-1 h-2 w-2 rounded-full bg-orange-500 shadow" />
+                          <span className="h-px flex-1 bg-orange-400" />
                         </div>
                       );
                     })()}
 
                     {comms.map((c) => {
                       const top = ((minutesOf(c.startISO) - START_HOUR * 60) / 60) * ROW_HEIGHT;
-                      const height = Math.max(20, ((minutesOf(c.endISO) - minutesOf(c.startISO)) / 60) * ROW_HEIGHT);
+                      const height = Math.max(22, ((minutesOf(c.endISO) - minutesOf(c.startISO)) / 60) * ROW_HEIGHT);
                       return (
                         <div
                           key={c.id}
@@ -368,17 +425,19 @@ export default function AgendaCalendar({
                             }
                           }}
                           style={{ top, height }}
-                          className="absolute left-0.5 right-0.5 overflow-hidden rounded-md border-l-4 border-amber-400 bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-800"
+                          className="absolute left-1 right-1 overflow-hidden rounded-md border-l-[3px] border-amber-400 bg-amber-50 px-2 py-1 text-[11px] text-amber-800 shadow-sm"
                           title="Clique para excluir"
                         >
-                          <p className="font-medium">{formatHour(new Date(c.startISO))} {c.title}</p>
+                          <p className="font-semibold">{formatHour(new Date(c.startISO))} – {formatHour(new Date(c.endISO))}</p>
+                          <p className="truncate opacity-90">{c.title}</p>
                         </div>
                       );
                     })}
 
                     {appts.map((a) => {
                       const top = ((minutesOf(a.dateISO) - START_HOUR * 60) / 60) * ROW_HEIGHT;
-                      const height = Math.max(24, (a.duration / 60) * ROW_HEIGHT);
+                      const height = Math.max(26, (a.duration / 60) * ROW_HEIGHT);
+                      const end = new Date(new Date(a.dateISO).getTime() + a.duration * 60000);
                       const colorClass =
                         a.status === "Confirmada"
                           ? "border-brand-500 bg-brand-50 text-brand-800"
@@ -395,10 +454,11 @@ export default function AgendaCalendar({
                             setPopover({ appt: a, x: e.clientX, y: e.clientY });
                           }}
                           style={{ top, height }}
-                          className={`absolute left-0.5 right-0.5 overflow-hidden rounded-md border-l-4 px-1.5 py-0.5 text-[11px] shadow-sm ${colorClass}`}
+                          className={`absolute left-1 right-1 overflow-hidden rounded-md border-l-[3px] px-2 py-1 text-[11px] shadow-sm transition-shadow hover:shadow-md ${colorClass}`}
                         >
-                          <p className="font-semibold">{formatHour(new Date(a.dateISO))} {a.patientName}</p>
-                          {height > 34 && a.chairName && <p className="opacity-70">{a.chairName}</p>}
+                          <p className="font-semibold">{formatHour(new Date(a.dateISO))} – {formatHour(end)}</p>
+                          <p className="truncate font-medium">{a.patientName}</p>
+                          {height > 42 && a.chairName && <p className="truncate opacity-70">{a.chairName}</p>}
                         </div>
                       );
                     })}

@@ -18,6 +18,39 @@ body {
   color: #1f2937;
 }
 
+@keyframes blob-float-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(4%, 6%) scale(1.08); }
+  66% { transform: translate(-3%, -4%) scale(0.95); }
+}
+
+@keyframes blob-float-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-6%, 5%) scale(1.12); }
+}
+
+@keyframes blob-float-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40% { transform: translate(5%, -5%) scale(1.05); }
+  70% { transform: translate(-4%, 3%) scale(0.97); }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gentle-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-blob-1 { animation: blob-float-1 16s ease-in-out infinite; }
+.animate-blob-2 { animation: blob-float-2 20s ease-in-out infinite; }
+.animate-blob-3 { animation: blob-float-3 18s ease-in-out infinite; }
+.animate-fade-in-up { animation: fade-in-up 0.6s ease-out both; }
+.animate-gentle-bob { animation: gentle-bob 5s ease-in-out infinite; }
+
 @media print {
   header,
   .no-print {

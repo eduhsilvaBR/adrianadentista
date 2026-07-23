@@ -21,7 +21,6 @@ export async function createAppointment(formData: FormData) {
     data: {
       patientId,
       professionalId: str(formData, "professionalId"),
-      chairId: str(formData, "chairId"),
       date: combineDateTime(dateKey, time),
       duration: Number(str(formData, "duration") ?? "30"),
       notes: str(formData, "notes"),
@@ -42,7 +41,6 @@ export async function updateAppointment(id: string, formData: FormData) {
     where: { id },
     data: {
       professionalId: str(formData, "professionalId"),
-      chairId: str(formData, "chairId"),
       date: combineDateTime(dateKey, time),
       duration: Number(str(formData, "duration") ?? "30"),
       notes: str(formData, "notes"),
@@ -118,13 +116,6 @@ export async function toggleTaskDone(id: string, done: boolean) {
 
 export async function deleteTask(id: string) {
   await prisma.task.delete({ where: { id } });
-  revalidatePath("/agenda");
-}
-
-export async function addChair(formData: FormData) {
-  const name = str(formData, "name");
-  if (!name) return;
-  await prisma.chair.create({ data: { name } });
   revalidatePath("/agenda");
 }
 

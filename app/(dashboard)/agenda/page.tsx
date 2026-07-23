@@ -8,10 +8,7 @@ export default async function AgendaPage({
   searchParams: Promise<{ date?: string; view?: string }>;
 }) {
   const params = await searchParams;
-  const view = (params.view === "dia" || params.view === "cadeira" ? params.view : "semana") as
-    | "semana"
-    | "dia"
-    | "cadeira";
+  const view = (params.view === "dia" ? params.view : "semana") as "semana" | "dia";
   const selectedKey = params.date && /^\d{4}-\d{2}-\d{2}$/.test(params.date) ? params.date : toDateKey(new Date());
   const selectedDate = new Date(`${selectedKey}T00:00:00.000Z`);
   const monday = getMonday(selectedDate);
@@ -20,12 +17,11 @@ export default async function AgendaPage({
   const rangeStart = view === "semana" ? monday : selectedDate;
   const rangeEnd = view === "semana" ? addDays(monday, 7) : addDays(selectedDate, 1);
 
-  const [chairs, professionals, appointments, commitments, tasks] = await Promise.all([
-    prisma.chair.findMany({ orderBy: { name: "asc" } }),
+  const [professionals, appointments, commitments, tasks] = await Promise.all([
     prisma.professional.findMany({ orderBy: { name: "asc" } }),
     prisma.appointment.findMany({
       where: { date: { gte: rangeStart, lt: rangeEnd } },
-      include: { patient: { include: { categories: true } }, professional: true, chair: true },
+      include: { patient: { include: { categories: true } }, professional: true },
       orderBy: { date: "asc" },
     }),
     prisma.commitment.findMany({
@@ -45,7 +41,6 @@ export default async function AgendaPage({
       mondayKey={mondayKey}
       selectedKey={selectedKey}
       view={view}
-      chairs={chairs.map((c) => ({ id: c.id, name: c.name }))}
       professionals={professionals.map((p) => ({ id: p.id, name: p.name }))}
       appointments={appointments.map((a) => ({
         id: a.id,
@@ -54,7 +49,6 @@ export default async function AgendaPage({
         patientPhone: a.patient.phone,
         categories: a.patient.categories.map((c) => c.name),
         professionalName: a.professional?.name ?? null,
-        chairName: a.chair?.name ?? null,
         dateISO: a.date.toISOString(),
         duration: a.duration,
         status: a.status,

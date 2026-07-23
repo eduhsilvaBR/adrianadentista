@@ -12,11 +12,9 @@ import { combineDateTime, minutesSinceMidnight } from "@/lib/utils";
 
 export type SimplePatient = { id: string; name: string; phone: string | null };
 export type SimpleProfessional = { id: string; name: string };
-export type SimpleChair = { id: string; name: string };
 export type SimpleAppointment = {
   id: string;
   professionalId: string | null;
-  chairId: string | null;
   dateISO: string;
   duration: number;
 };
@@ -30,7 +28,6 @@ const labelCls = "mb-1 block text-sm font-medium text-gray-700";
 export default function EventModal({
   onClose,
   professionals,
-  chairs,
   appointments,
   defaultProfessionalId,
   prefillDate,
@@ -39,7 +36,6 @@ export default function EventModal({
 }: {
   onClose: () => void;
   professionals: SimpleProfessional[];
-  chairs: SimpleChair[];
   appointments: SimpleAppointment[];
   defaultProfessionalId?: string;
   prefillDate: string;
@@ -48,7 +44,6 @@ export default function EventModal({
     id: string;
     patientName: string;
     professionalId: string | null;
-    chairId: string | null;
     duration: number;
     notes: string | null;
     returnIn: string | null;
@@ -99,7 +94,6 @@ export default function EventModal({
           {tab === "consulta" && (
             <ConsultaForm
               professionals={professionals}
-              chairs={chairs}
               appointments={appointments}
               defaultProfessionalId={defaultProfessionalId}
               prefillDate={prefillDate}
@@ -225,7 +219,6 @@ function PatientPicker({
 
 function ConsultaForm({
   professionals,
-  chairs,
   appointments,
   defaultProfessionalId,
   prefillDate,
@@ -236,7 +229,6 @@ function ConsultaForm({
   onDone,
 }: {
   professionals: SimpleProfessional[];
-  chairs: SimpleChair[];
   appointments: SimpleAppointment[];
   defaultProfessionalId?: string;
   prefillDate: string;
@@ -250,7 +242,6 @@ function ConsultaForm({
   const [professionalId, setProfessionalId] = useState(
     editAppointment?.professionalId ?? defaultProfessionalId ?? professionals[0]?.id ?? ""
   );
-  const [chairId, setChairId] = useState(editAppointment?.chairId ?? chairs[0]?.id ?? "");
   const [date, setDate] = useState(prefillDate);
   const [time, setTime] = useState(prefillTime);
   const [duration, setDuration] = useState(editAppointment?.duration ?? 30);
@@ -299,33 +290,18 @@ function ConsultaForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={labelCls}>Dentista</label>
-          <select
-            name="professionalId"
-            value={professionalId}
-            onChange={(e) => setProfessionalId(e.target.value)}
-            className={inputCls}
-          >
-            {professionals.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>Cadeira</label>
-          <select
-            name="chairId"
-            value={chairId}
-            onChange={(e) => setChairId(e.target.value)}
-            className={inputCls}
-          >
-            {chairs.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
+      <div>
+        <label className={labelCls}>Dentista</label>
+        <select
+          name="professionalId"
+          value={professionalId}
+          onChange={(e) => setProfessionalId(e.target.value)}
+          className={inputCls}
+        >
+          {professionals.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
       </div>
 
       <div>

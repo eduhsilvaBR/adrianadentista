@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import MiniCalendar from "./MiniCalendar";
-import EventModal, { SimpleAppointment, SimpleChair, SimpleProfessional } from "./EventModal";
+import EventModal, { SimpleAppointment, SimpleProfessional } from "./EventModal";
 import AppointmentPopover, { PopoverAppointment } from "./AppointmentPopover";
 import { addDays, formatHour, MONTHS_BR, toDateKey, WEEKDAYS_BR } from "@/lib/utils";
-import { addChair, addProfessional, deleteCommitment, deleteTask, toggleTaskDone } from "@/app/(dashboard)/agenda/actions";
+import { addProfessional, deleteCommitment, deleteTask, toggleTaskDone } from "@/app/(dashboard)/agenda/actions";
 
 const START_HOUR = 7;
 const END_HOUR = 22;
@@ -20,7 +20,6 @@ export default function AgendaCalendar({
   mondayKey,
   selectedKey,
   view,
-  chairs,
   professionals,
   appointments,
   commitments,
@@ -28,23 +27,19 @@ export default function AgendaCalendar({
 }: {
   mondayKey: string;
   selectedKey: string;
-  view: "semana" | "dia" | "cadeira";
-  chairs: SimpleChair[];
+  view: "semana" | "dia";
   professionals: SimpleProfessional[];
   appointments: AgendaAppointment[];
   commitments: AgendaCommitment[];
   tasks: AgendaTask[];
 }) {
   const router = useRouter();
-  const [filterChair, setFilterChair] = useState<string>("all");
   const [filterProfessional, setFilterProfessional] = useState<string>("all");
-  const [modal, setModal] = useState<{ date: string; time: string; professionalId?: string; chairId?: string } | null>(null);
+  const [modal, setModal] = useState<{ date: string; time: string; professionalId?: string } | null>(null);
   const [editAppointmentId, setEditAppointmentId] = useState<string | null>(null);
   const [popover, setPopover] = useState<{ appt: AgendaAppointment; x: number; y: number } | null>(null);
-  const [addingChair, setAddingChair] = useState(false);
   const [addingPro, setAddingPro] = useState(false);
   const [nowLabel, setNowLabel] = useState(() => new Date());
-  const [chairsOpen, setChairsOpen] = useState(true);
   const [agendasOpen, setAgendasOpen] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -65,37 +60,20 @@ export default function AgendaCalendar({
   const filteredAppointments = useMemo(
     () =>
       appointments.filter(
-        (a) =>
-          (filterChair === "all" || a.chairName === chairs.find((c) => c.id === filterChair)?.name) &&
-          (filterProfessional === "all" || a.professionalName === professionals.find((p) => p.id === filterProfessional)?.name)
+        (a) => filterProfessional === "all" || a.professionalName === professionals.find((p) => p.id === filterProfessional)?.name
       ),
-    [appointments, filterChair, filterProfessional, chairs, professionals]
+    [appointments, filterProfessional, professionals]
   );
 
   const filteredCommitments = useMemo(
-    () =>
-      commitments.filter(
-        (c) => filterProfessional === "all" || c.professionalId === filterProfessional
-      ),
+    () => commitments.filter((c) => filterProfessional === "all" || c.professionalId === filterProfessional),
     [commitments, filterProfessional]
   );
 
-  type Column = { key: string; label: string; sub: string; dateKey: string; chairId?: string; isToday: boolean; isWeekend: boolean };
+  type Column = { key: string; label: string; sub: string; dateKey: string; isToday: boolean; isWeekend: boolean };
 
   const columns: Column[] = useMemo(() => {
     const todayKey = toDateKey(new Date());
-    if (view === "cadeira") {
-      const list = chairs.length > 0 ? chairs : [{ id: "sem-cadeira", name: "Sem cadeira" }];
-      return list.map((c) => ({
-        key: c.id,
-        label: c.name,
-        sub: "",
-        dateKey: selectedKey,
-        chairId: c.id,
-        isToday: selectedKey === todayKey,
-        isWeekend: false,
-      }));
-    }
     if (view === "dia") {
       const d = new Date(`${selectedKey}T00:00:00.000Z`);
       const wd = d.getUTCDay();
@@ -121,7 +99,7 @@ export default function AgendaCalendar({
         isWeekend: wd === 0 || wd === 6,
       };
     });
-  }, [view, chairs, selectedKey, mondayKey]);
+  }, [view, selectedKey, mondayKey]);
 
   const headerDate = new Date(`${selectedKey}T00:00:00.000Z`);
   const hours = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
@@ -132,12 +110,7 @@ export default function AgendaCalendar({
   }
 
   function eventsForColumn(col: Column) {
-    const appts = filteredAppointments.filter((a) => {
-      const sameDay = a.dateISO.startsWith(col.dateKey);
-      if (!sameDay) return false;
-      if (view === "cadeira") return a.chairName === chairs.find((c) => c.id === col.chairId)?.name;
-      return true;
-    });
+    const appts = filteredAppointments.filter((a) => a.dateISO.startsWith(col.dateKey));
     const comms = filteredCommitments.filter((c) => c.startISO.startsWith(col.dateKey));
     return { appts, comms };
   }
@@ -153,7 +126,6 @@ export default function AgendaCalendar({
       date: col.dateKey,
       time: `${h}:${m}`,
       professionalId: filterProfessional !== "all" ? filterProfessional : professionals[0]?.id,
-      chairId: view === "cadeira" ? col.chairId : filterChair !== "all" ? filterChair : chairs[0]?.id,
     });
   }
 
@@ -165,52 +137,6 @@ export default function AgendaCalendar({
       {sidebarOpen && (
         <aside className="w-64 shrink-0 space-y-4">
           <MiniCalendar selectedKey={selectedKey} onSelect={(k) => navigate(k, view === "semana" ? "semana" : view)} />
-
-          <div className="rounded-xl bg-white p-4 shadow-sm">
-            <button
-              onClick={() => setChairsOpen((v) => !v)}
-              className="mb-2 flex w-full items-center justify-between text-sm font-semibold text-gray-800"
-            >
-              Cadeiras
-              <span className={`text-gray-400 transition-transform ${chairsOpen ? "" : "-rotate-90"}`}>▾</span>
-            </button>
-            {chairsOpen && (
-              <>
-                <div className="space-y-0.5">
-                  <button
-                    onClick={() => setFilterChair("all")}
-                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${filterChair === "all" ? "bg-brand-50 font-medium text-brand-700" : "text-gray-600 hover:bg-gray-50"}`}
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${filterChair === "all" ? "bg-brand-500" : "bg-gray-300"}`} />
-                    Todas
-                  </button>
-                  {chairs.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setFilterChair(c.id)}
-                      className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors ${filterChair === c.id ? "bg-brand-50 font-medium text-brand-700" : "text-gray-600 hover:bg-gray-50"}`}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${filterChair === c.id ? "bg-brand-500" : "bg-gray-300"}`} />
-                      {c.name}
-                    </button>
-                  ))}
-                </div>
-                {addingChair ? (
-                  <form
-                    action={async (fd) => { await addChair(fd); setAddingChair(false); router.refresh(); }}
-                    className="mt-2 flex gap-1"
-                  >
-                    <input name="name" autoFocus placeholder="Nome da cadeira" className="w-full rounded-lg border border-gray-300 px-2 py-1 text-xs" />
-                    <button type="submit" className="rounded-lg bg-brand-600 px-2 text-xs text-white">OK</button>
-                  </form>
-                ) : (
-                  <button onClick={() => setAddingChair(true)} className="mt-2 text-xs font-medium text-brand-600 hover:underline">
-                    + Adicionar cadeira
-                  </button>
-                )}
-              </>
-            )}
-          </div>
 
           <div className="rounded-xl bg-white p-4 shadow-sm">
             <button
@@ -323,7 +249,7 @@ export default function AgendaCalendar({
 
           <div className="ml-auto flex items-center gap-2">
             <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
-              {(["semana", "dia", "cadeira"] as const).map((v) => (
+              {(["semana", "dia"] as const).map((v) => (
                 <button
                   key={v}
                   onClick={() => navigate(selectedKey, v)}
@@ -351,7 +277,6 @@ export default function AgendaCalendar({
                 date: selectedKey,
                 time: formatHour(nowLabel).slice(0, 4) + "0",
                 professionalId: filterProfessional !== "all" ? filterProfessional : professionals[0]?.id,
-                chairId: filterChair !== "all" ? filterChair : chairs[0]?.id,
               })
             }
             className="absolute left-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-lg font-light text-white shadow hover:bg-brand-700"
@@ -378,10 +303,10 @@ export default function AgendaCalendar({
               return (
                 <div
                   key={col.key}
-                  className={`flex-1 border-l border-gray-100 ${col.isWeekend ? "bg-gray-50/60" : col.isToday ? "bg-brand-50/50" : ""}`}
+                  className={`flex-1 border-l border-gray-100 ${col.isWeekend ? "bg-gray-100/70" : col.isToday ? "bg-brand-50/50" : ""}`}
                 >
-                  <div className={`sticky top-0 z-[1] border-b border-gray-100 py-2 text-center ${col.isToday ? "bg-brand-50/70" : "bg-white"}`}>
-                    <p className={`text-sm font-medium ${col.isToday ? "text-brand-700" : "text-gray-600"}`}>
+                  <div className={`sticky top-0 z-[1] border-b border-gray-100 py-2 text-center ${col.isToday ? "bg-brand-50/70" : col.isWeekend ? "bg-gray-100/70" : "bg-white"}`}>
+                    <p className={`text-sm font-medium ${col.isToday ? "text-brand-700" : col.isWeekend ? "text-gray-400" : "text-gray-600"}`}>
                       {col.label}
                       {col.sub && (
                         <span className={col.isToday ? "ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-xs text-white" : "ml-1.5"}>
@@ -405,7 +330,8 @@ export default function AgendaCalendar({
                       const top = ((mins - START_HOUR * 60) / 60) * ROW_HEIGHT;
                       return (
                         <div className="pointer-events-none absolute left-0 right-0 z-[2] flex items-center" style={{ top }}>
-                          <span className="-ml-1 h-2 w-2 rounded-full bg-orange-500 shadow" />
+                          <span className="-ml-[5px] h-0 w-0 border-y-[5px] border-l-[7px] border-y-transparent border-l-orange-500" />
+                          <span className="h-2 w-2 -translate-x-1 rounded-full bg-orange-500 shadow" />
                           <span className="h-px flex-1 bg-orange-400" />
                         </div>
                       );
@@ -458,7 +384,6 @@ export default function AgendaCalendar({
                         >
                           <p className="font-semibold">{formatHour(new Date(a.dateISO))} – {formatHour(end)}</p>
                           <p className="truncate font-medium">{a.patientName}</p>
-                          {height > 42 && a.chairName && <p className="truncate opacity-70">{a.chairName}</p>}
                         </div>
                       );
                     })}
@@ -474,7 +399,6 @@ export default function AgendaCalendar({
         <EventModal
           onClose={() => setModal(null)}
           professionals={professionals}
-          chairs={chairs}
           appointments={appointments as unknown as SimpleAppointment[]}
           defaultProfessionalId={modal.professionalId}
           prefillDate={modal.date}
@@ -486,7 +410,6 @@ export default function AgendaCalendar({
         <EventModal
           onClose={() => setEditAppointmentId(null)}
           professionals={professionals}
-          chairs={chairs}
           appointments={appointments as unknown as SimpleAppointment[]}
           prefillDate={editingAppt.dateISO.slice(0, 10)}
           prefillTime={formatHour(new Date(editingAppt.dateISO))}
@@ -494,7 +417,6 @@ export default function AgendaCalendar({
             id: editingAppt.id,
             patientName: editingAppt.patientName,
             professionalId: professionals.find((p) => p.name === editingAppt.professionalName)?.id ?? null,
-            chairId: chairs.find((c) => c.name === editingAppt.chairName)?.id ?? null,
             duration: editingAppt.duration,
             notes: editingAppt.notes,
             returnIn: editingAppt.returnIn,

@@ -68,39 +68,31 @@ model Category {
 }
 
 model Professional {
-  id           String        @id @default(cuid())
-  name         String
-  email        String?
-  cro          String?
-  type         String        @default("Dentista")
+  id            String         @id @default(cuid())
+  name          String
+  email         String?
+  cro           String?
+  type          String         @default("Dentista")
   appointments  Appointment[]
   commitments   Commitment[]
   tasks         Task[]
   prescriptions Prescription[]
 }
 
-model Chair {
-  id           String        @id @default(cuid())
-  name         String
-  appointments Appointment[]
-}
-
 model Appointment {
-  id             String        @id @default(cuid())
-  patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  patientId      String
-  professional   Professional? @relation(fields: [professionalId], references: [id])
-  professionalId String?
-  chair          Chair?        @relation(fields: [chairId], references: [id])
-  chairId        String?
-  date           DateTime
-  duration       Int           @default(30)
-  notes          String?
-  status         String        @default("Agendada")
-  sendConfirmation Boolean     @default(true)
-  returnIn       String?
-  tag            String?
-  createdAt      DateTime      @default(now())
+  id               String        @id @default(cuid())
+  patient          Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId        String
+  professional     Professional? @relation(fields: [professionalId], references: [id])
+  professionalId   String?
+  date             DateTime
+  duration         Int           @default(30)
+  notes            String?
+  status           String        @default("Agendada")
+  sendConfirmation Boolean       @default(true)
+  returnIn         String?
+  tag              String?
+  createdAt        DateTime      @default(now())
 }
 
 model Commitment {

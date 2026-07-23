@@ -12,7 +12,6 @@ export type PopoverAppointment = {
   patientPhone: string | null;
   categories: string[];
   professionalName: string | null;
-  chairName: string | null;
   dateISO: string;
   duration: number;
   status: string;
@@ -97,7 +96,6 @@ export default function AppointmentPopover({
         <div className="mt-3 space-y-1.5 text-xs text-gray-600">
           {appointment.professionalName && <p>👤 {appointment.professionalName}</p>}
           <p>📅 {formatDateBR(date)} · 🕐 {formatHour(date)} ({appointment.duration} min)</p>
-          {appointment.chairName && <p>🪑 {appointment.chairName}</p>}
           {appointment.tag && appointment.tag !== "Nenhuma" && (
             <p className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-brand-500" /> {appointment.tag}

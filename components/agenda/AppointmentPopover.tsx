@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { deleteAppointment, updateAppointmentStatus } from "@/app/agenda/actions";
+import { deleteAppointment, updateAppointmentStatus } from "@/app/(dashboard)/agenda/actions";
 import { formatDateBR, formatHour, whatsappLink } from "@/lib/utils";
 
 export type PopoverAppointment = {

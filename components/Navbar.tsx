@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logout } from "@/app/login/actions";
 
 const links = [
   { href: "/agenda", label: "Agenda", icon: "📅" },
@@ -9,7 +10,7 @@ const links = [
   { href: "/financeiro", label: "Financeiro", icon: "📊" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ user }: { user: { name: string; role: string } }) {
   const pathname = usePathname();
 
   return (
@@ -43,9 +44,26 @@ export default function Navbar() {
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
-          <span className="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600">
-            Conta
-          </span>
+          <div className="flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-100 text-[10px] font-semibold text-brand-700">
+              {user.name.charAt(0).toUpperCase()}
+            </span>
+            {user.name}
+            {user.role === "ADMIN" && (
+              <span className="rounded-full bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-600">
+                ADMIN
+              </span>
+            )}
+          </div>
+          <form action={logout}>
+            <button
+              type="submit"
+              className="text-sm font-medium text-gray-500 hover:text-red-600"
+              title="Sair"
+            >
+              Sair
+            </button>
+          </form>
         </div>
       </div>
     </header>

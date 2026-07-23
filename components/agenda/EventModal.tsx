@@ -7,7 +7,7 @@ import {
   createCommitment,
   createTask,
   updateAppointment,
-} from "@/app/agenda/actions";
+} from "@/app/(dashboard)/agenda/actions";
 import { combineDateTime, minutesSinceMidnight } from "@/lib/utils";
 
 export type SimplePatient = { id: string; name: string; phone: string | null };

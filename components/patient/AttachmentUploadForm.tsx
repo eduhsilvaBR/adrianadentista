@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { uploadAttachment } from "@/app/pacientes/[id]/records-actions";
+import { uploadAttachment } from "@/app/(dashboard)/pacientes/[id]/records-actions";
 
 const CATEGORIES = ["Exame", "Radiografia", "Documento", "Imagem", "Outro"];
 

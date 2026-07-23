@@ -6,7 +6,7 @@ import MiniCalendar from "./MiniCalendar";
 import EventModal, { SimpleAppointment, SimpleChair, SimpleProfessional } from "./EventModal";
 import AppointmentPopover, { PopoverAppointment } from "./AppointmentPopover";
 import { addDays, formatHour, MONTHS_BR, toDateKey, WEEKDAYS_BR } from "@/lib/utils";
-import { addChair, addProfessional, deleteCommitment, deleteTask, toggleTaskDone } from "@/app/agenda/actions";
+import { addChair, addProfessional, deleteCommitment, deleteTask, toggleTaskDone } from "@/app/(dashboard)/agenda/actions";
 
 const START_HOUR = 7;
 const END_HOUR = 22;
